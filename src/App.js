@@ -17,11 +17,13 @@ function App() {
       else setProfile(null)
     })
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) fetchProfile(session.user.id)
       else setProfile(null)
     })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const fetchProfile = async (userId) => {
@@ -29,7 +31,7 @@ function App() {
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()   // returns null instead of 406 when no row exists yet
     setProfile(data)
   }
 
@@ -40,25 +42,25 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Coach route */}
+        {/* Coach route — show login if no session OR no profile row yet */}
         <Route
           path="/coach"
           element={
-            !session
+            !session || !profile
               ? <CoachLogin />
-              : profile?.role === 'coach'
+              : profile.role === 'coach'
               ? <CoachView session={session} />
               : <div style={{ padding: 24, color: 'red' }}>⛔ Access denied. Not a coach account.</div>
           }
         />
 
-        {/* Client route */}
+        {/* Client route — show login if no session OR no profile row yet */}
         <Route
           path="/client"
           element={
-            !session
+            !session || !profile
               ? <ClientLogin />
-              : profile?.role === 'client'
+              : profile.role === 'client'
               ? <ClientView session={session} />
               : <div style={{ padding: 24, color: 'red' }}>⛔ Access denied. Not a client account.</div>
           }

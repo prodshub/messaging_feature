@@ -21,13 +21,15 @@ export default function CoachLogin() {
       if (data.user) {
         await supabase
           .from('profiles')
-          .upsert({ 
-            user_id: data.user.id,
-        role: 'coach',
-        display_name: displayName || email,
-        title: 'Financial Expert'
-    })
-    .eq('user_id', data.user.id)
+          .update(
+            {
+              user_id:      data.user.id,
+              role:         'coach',
+              display_name: displayName || email,
+              title:        'Financial Expert',
+            },
+            { onConflict: 'user_id' }   // overwrite any row the trigger already created
+          )
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
